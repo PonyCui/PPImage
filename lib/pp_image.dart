@@ -9,3 +9,4 @@ import 'package:dio/dio.dart';
 part 'widget.dart';
 part 'entities.dart';
 part 'cache.dart';
+part 'manager.dart';
