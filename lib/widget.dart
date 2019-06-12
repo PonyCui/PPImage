@@ -57,14 +57,37 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
   }
 
   loadImage() async {
+    if (widget.image is! PPImageItem) {
+      print("not download image");
+      return;
+    }
+    final imageItem = widget.image;
     final cachedImageProvider =
-        await PPImageCache.shared.fetchImage(widget.image);
-    if (!mounted) return;
-    if (cachedImageProvider == null) {
+        await PPImageCache.shared.fetchImage(imageItem.url);
+    // 判断是否已经在下载，如果没在下载的，提高优先级
+
+    if (cachedImageProvider is ImageProvider) {
+      print("[Image] 有缓存，直接加载 ${imageItem.url}");
+      if (mounted) {
+        setState(() {
+          noCache = false;
+          imageProvider = cachedImageProvider;
+        });
+      }
+      return;
+    }
+
+    print("image load, no cache [${imageItem.url}], will download");
+    if (mounted) {
       setState(() {
         noCache = true;
       });
-      final remoteImageProvider = await widget.image.download();
+    } else {
+      noCache = true;
+    }
+    PPImageDownloadManager.shared.download(imageItem.url,
+        priority: imageItem.priority, callback: (data, error) {
+      final remoteImageProvider = MemoryImage(data);
       if (!mounted) return;
       if (widget.fadeIn) {
         animationType = _AnimationType.fadeIn;
@@ -81,24 +104,22 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
           });
         });
       }
-      setState(() {
+
+      if (mounted) {
+        setState(() {
+          imageProvider = remoteImageProvider;
+        });
+      } else {
         imageProvider = remoteImageProvider;
-      });
-    } else {
-      setState(() {
-        noCache = false;
-        imageProvider = cachedImageProvider;
-      });
-    }
+      }
+    });
   }
 
   Widget renderImage() {
-    if (widget.image is PPNetworkImageItem) {
-      return Image(
-        image: imageProvider,
-        fit: widget.fit,
-      );
-    }
+    return Image(
+      image: imageProvider,
+      fit: widget.fit,
+    );
     return Container();
   }
 
