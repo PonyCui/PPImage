@@ -67,7 +67,6 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
     // 判断是否已经在下载，如果没在下载的，提高优先级
 
     if (cachedImageProvider is ImageProvider) {
-      print("[Image] 有缓存，直接加载 ${imageItem.url}");
       if (mounted) {
         setState(() {
           noCache = false;
@@ -77,7 +76,6 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
       return;
     }
 
-    print("image load, no cache [${imageItem.url}], will download");
     if (mounted) {
       setState(() {
         noCache = true;
@@ -87,6 +85,11 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
     }
     PPImageDownloadManager.shared.download(imageItem.url,
         priority: imageItem.priority, callback: (data, error) {
+      if (data is! Uint8List) {
+        // 下载失败
+        return;
+      }
+
       final remoteImageProvider = MemoryImage(data);
       if (!mounted) return;
       if (widget.fadeIn) {
@@ -120,7 +123,6 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
       image: imageProvider,
       fit: widget.fit,
     );
-    return Container();
   }
 
   @override
