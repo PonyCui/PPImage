@@ -10,13 +10,14 @@ class PPImage extends StatefulWidget {
   final BoxFit fit;
   final Widget placeholder;
   final bool fadeIn;
+  final bool cancelWhenDispose;
 
-  PPImage({
-    this.image,
-    this.fit,
-    this.placeholder,
-    this.fadeIn = false,
-  });
+  PPImage(
+      {this.image,
+      this.fit,
+      this.placeholder,
+      this.fadeIn = false,
+      this.cancelWhenDispose = false});
 
   @override
   State<StatefulWidget> createState() {
@@ -33,6 +34,9 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
   @override
   dispose() {
     animationController.dispose();
+    if (widget.cancelWhenDispose) {
+      cancel();
+    }
     super.dispose();
   }
 
@@ -54,6 +58,10 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
       if (!mounted) return;
       setState(() {});
     });
+  }
+
+  cancel() {
+    PPImageDownloadManager.shared.cancel(widget.image.url);
   }
 
   loadImage() async {
@@ -119,6 +127,9 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
   }
 
   Widget renderImage() {
+    if (imageProvider == null) {
+      return widget.placeholder ?? Container();
+    }
     return Image(
       image: imageProvider,
       fit: widget.fit,
