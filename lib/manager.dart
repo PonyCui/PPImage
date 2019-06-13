@@ -15,10 +15,10 @@ typedef PPImageDownloadResultCallback = void Function(
 /// 图片下载管理器
 ///
 /// 基本规则：download 默认低优先级，加在等待队列尾部，高优先级会加入到等待队列头部
-/// 默认并发数量为 10，设置并发数见：[configuration]
+/// 默认并发数量为 5，设置并发数见：[configuration]
 class PPImageDownloadManager {
   static final shared = PPImageDownloadManager();
-  int _maxDownloadCount = 10;
+  int _maxDownloadCount = 5;
   PPImageDownloadLogCallback _logCallback;
 
   configuration(int maxCount, {PPImageDownloadLogCallback logCallback}) {
@@ -27,6 +27,8 @@ class PPImageDownloadManager {
   }
 
   List<String> _downloadingQueue = [];
+  Map<String, CancelToken> _downloadingTokens = {};
+
   List<String> _waitingQueue = [];
   Map<String, List<Function>> _downloadObservers = {};
 
@@ -35,6 +37,19 @@ class PPImageDownloadManager {
       return true;
     }
     return false;
+  }
+
+  cancel(String url) {
+    if (_downloadingTokens.containsKey(url) || _waitingQueue.contains(url)) {
+      _log("[$url] need to cancel!!!!!!!!");
+      _waitingQueue.remove(url);
+      final token = _downloadingTokens[url];
+      if (token is CancelToken) {
+        if (!token.isCancelled) {
+          token.cancel();
+        }
+      }
+    }
   }
 
   download(String url,
@@ -61,6 +76,7 @@ class PPImageDownloadManager {
 
     if (_downloadingQueue.length >= _maxDownloadCount) {
       if (priority == PPImageDownloadPriority.high) {
+        _log("[$url] high priority!!!!!");
         _waitingQueue.insert(0, url);
       } else {
         _waitingQueue.add(url);
@@ -75,24 +91,36 @@ class PPImageDownloadManager {
 
   Future _download(String url, {int retryCount: 0}) async {
     _downloadingQueue.add(url);
+    final cancelToken = CancelToken();
+    _downloadingTokens[url] = cancelToken;
     try {
-      final response = await Dio().get<List<int>>(
-        url,
-        options: Options(responseType: ResponseType.bytes),
-      );
-      _log("download [$url] successfully!");
+      await Future.delayed(Duration(milliseconds: 3000));
+      final response = await Dio().get<List<int>>(url,
+          options: Options(responseType: ResponseType.bytes),
+          cancelToken: cancelToken);
+      _log("[$url] download successfully!");
       final uInt8List = Uint8List.fromList(response.data);
       PPImageCache.shared.storeImage(url, uInt8List);
 
       _handleCallback(url, uInt8List, null);
 
       _downloadingQueue.remove(url);
+      _downloadingTokens.remove(url);
       _downloadNext();
     } catch (e) {
       // todo retry
       _downloadingQueue.remove(url);
+      _downloadingTokens.remove(url);
+
+      if (e is DioError && CancelToken.isCancel(e)) {
+        // 取消不重试
+        _log("[$url] cancel download !!!!!!!!!!!!!!!!!!!!!!!");
+        _downloadNext();
+        return;
+      }
+
       if (retryCount > 0) {
-        _log("download error $url, will retry $retryCount");
+        _log("[$url] download error, will retry $retryCount");
         _download(url, retryCount: retryCount - 1);
       } else {
         _handleCallback(

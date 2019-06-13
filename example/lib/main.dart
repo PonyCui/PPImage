@@ -55,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
               // width: 300,
               height: 300,
               child: PPImage(
-                image: PPNetworkImageItem(url: url),
+                image: PPImageItem(url: url),
                 fit: BoxFit.cover,
                 placeholder: Container(
                   color: Colors.yellow,
