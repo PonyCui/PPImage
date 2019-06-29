@@ -12,6 +12,7 @@ class PPImage extends StatefulWidget {
   final bool fadeIn;
   final bool cancelWhenDispose;
   final String heroTag;
+  final CreateRectTween heroRectTween;
 
   PPImage({
     this.image,
@@ -20,6 +21,7 @@ class PPImage extends StatefulWidget {
     this.fadeIn = false,
     this.cancelWhenDispose = false,
     this.heroTag,
+    this.heroRectTween,
   });
 
   @override
@@ -162,6 +164,7 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
     if (widget.heroTag != null) {
       return Hero(
         tag: widget.heroTag,
+        createRectTween: widget.heroRectTween,
         child: Image(
           image: imageProvider,
           fit: widget.fit,
@@ -180,6 +183,7 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
     if (widget.heroTag != null && _heroCache[widget.heroTag] != null) {
       return Hero(
         tag: widget.heroTag,
+        createRectTween: widget.heroRectTween,
         child: Image(
           image: _heroCache[widget.heroTag],
           fit: widget.fit,
