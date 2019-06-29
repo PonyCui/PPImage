@@ -11,13 +11,16 @@ class PPImage extends StatefulWidget {
   final Widget placeholder;
   final bool fadeIn;
   final bool cancelWhenDispose;
+  final String heroTag;
 
-  PPImage(
-      {this.image,
-      this.fit,
-      this.placeholder,
-      this.fadeIn = false,
-      this.cancelWhenDispose = false});
+  PPImage({
+    this.image,
+    this.fit,
+    this.placeholder,
+    this.fadeIn = false,
+    this.cancelWhenDispose = false,
+    this.heroTag,
+  }) : super(key: heroTag != null ? Key(heroTag) : image?.uniqueKey);
 
   @override
   State<StatefulWidget> createState() {
@@ -26,6 +29,9 @@ class PPImage extends StatefulWidget {
 }
 
 class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
+  static Map<String, ImageProvider> _heroCache = {};
+  static Map<String, int> _heroCacheCount = {};
+
   bool noCache;
   ImageProvider imageProvider;
   AnimationController animationController;
@@ -37,6 +43,14 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
     if (widget.cancelWhenDispose) {
       cancel();
     }
+    if (widget.heroTag != null) {
+      if (_heroCacheCount[widget.heroTag] != null) {
+        _heroCacheCount[widget.heroTag]--;
+        if (_heroCacheCount[widget.heroTag] <= 0) {
+          _heroCache.remove(widget.heroTag);
+        }
+      }
+    }
     super.dispose();
   }
 
@@ -45,6 +59,12 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
     super.initState();
     setupAnimationController();
     loadImage();
+    if (widget.heroTag != null) {
+      if (_heroCacheCount[widget.heroTag] == null) {
+        _heroCacheCount[widget.heroTag] = 0;
+      }
+      _heroCacheCount[widget.heroTag]++;
+    }
   }
 
   setupAnimationController() {
@@ -80,6 +100,9 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
           noCache = false;
           imageProvider = cachedImageProvider;
         });
+        if (widget.heroTag != null) {
+          _heroCache[widget.heroTag] = imageProvider;
+        }
       }
       return;
     }
@@ -120,8 +143,14 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
         setState(() {
           imageProvider = remoteImageProvider;
         });
+        if (widget.heroTag != null) {
+          _heroCache[widget.heroTag] = imageProvider;
+        }
       } else {
         imageProvider = remoteImageProvider;
+        if (widget.heroTag != null) {
+          _heroCache[widget.heroTag] = imageProvider;
+        }
       }
     });
   }
@@ -130,15 +159,36 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
     if (imageProvider == null) {
       return widget.placeholder ?? Container();
     }
-    return Image(
-      image: imageProvider,
-      fit: widget.fit,
-    );
+    if (widget.heroTag != null) {
+      return Hero(
+        tag: widget.heroTag,
+        child: Image(
+          image: imageProvider,
+          fit: widget.fit,
+        ),
+      );
+    } else {
+      return Image(
+        image: imageProvider,
+        fit: widget.fit,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (noCache == null) return Container();
+    if (widget.heroTag != null && _heroCache[widget.heroTag] != null) {
+      return Hero(
+        tag: widget.heroTag,
+        child: Image(
+          image: _heroCache[widget.heroTag],
+          fit: widget.fit,
+        ),
+      );
+    }
+    if (noCache == null) {
+      return Container();
+    }
     if (imageProvider == null) {
       return widget.placeholder ?? Container();
     }

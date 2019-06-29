@@ -1,3 +1,4 @@
+import 'package:example/hero_test.dart';
 import 'package:flutter/material.dart';
 import 'package:pp_image/pp_image.dart';
 
@@ -26,44 +27,48 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<String> mocks = [];
+
   @override
   void initState() {
     super.initState();
-
-    PPImageDownloadManager.shared.configuration(5, logCallback: (log) {
-      print(log);
-    });
-
-    for (int i = 0; i < 80; i++) {
-      mocks.add(
-          "https://img.zcool.cn/community/01256a58b54ccea801219c77807a0c.jpg@1280w_1l_2o_100sh.jpg?params=8-$i");
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-        ),
-        body: ListView.builder(
-          itemCount: mocks.length,
-          itemBuilder: (context, index) {
-            final url = mocks[index];
-            return Container(
-              // width: 300,
-              height: 300,
-              child: PPImage(
-                image: PPImageItem(url: url),
-                fit: BoxFit.cover,
-                placeholder: Container(
-                  color: Colors.yellow,
-                ),
-                fadeIn: true,
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                fullscreenDialog: true,
+                builder: (_) {
+                  return HeroTest();
+                },
               ),
             );
           },
-        ));
+          child: Container(
+            width: 300,
+            height: 300,
+            child: PPImage(
+              image: PPImageItem(
+                url:
+                    "http://pic121.huitu.com/res/20190523/1663235_20190523114920376020_1.jpg",
+              ),
+              fit: BoxFit.cover,
+              placeholder: Container(
+                color: Colors.black,
+              ),
+              fadeIn: true,
+              heroTag: "xxx",
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
