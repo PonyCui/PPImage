@@ -20,7 +20,7 @@ class PPImage extends StatefulWidget {
     this.fadeIn = false,
     this.cancelWhenDispose = false,
     this.heroTag,
-  }) : super(key: heroTag != null ? Key(heroTag) : image?.uniqueKey);
+  });
 
   @override
   State<StatefulWidget> createState() {
