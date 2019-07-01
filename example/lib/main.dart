@@ -27,7 +27,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   @override
   void initState() {
     super.initState();
@@ -65,6 +64,12 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               fadeIn: true,
               heroTag: "xxx",
+              wrapperBuilder: (_, child) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: child,
+                );
+              },
             ),
           ),
         ),

@@ -5,12 +5,16 @@ enum _AnimationType {
   fadeIn,
 }
 
+typedef WrapperBuilder = Widget Function(
+    BuildContext buildContext, Widget child);
+
 class PPImage extends StatefulWidget {
   final PPImageItem image;
   final BoxFit fit;
   final Widget placeholder;
   final bool fadeIn;
   final bool cancelWhenDispose;
+  final WrapperBuilder wrapperBuilder;
   final String heroTag;
   final CreateRectTween heroRectTween;
 
@@ -20,6 +24,7 @@ class PPImage extends StatefulWidget {
     this.placeholder,
     this.fadeIn = false,
     this.cancelWhenDispose = false,
+    this.wrapperBuilder,
     this.heroTag,
     this.heroRectTween,
   });
@@ -157,38 +162,38 @@ class _PPImageState extends State<PPImage> with SingleTickerProviderStateMixin {
     });
   }
 
-  Widget renderImage() {
-    if (imageProvider == null) {
+  Widget renderImage({ImageProvider argImageProvider}) {
+    final mImageProvider = argImageProvider ?? this.imageProvider;
+    if (mImageProvider == null) {
       return widget.placeholder ?? Container();
     }
+    final contentWidget = widget.wrapperBuilder != null
+        ? widget.wrapperBuilder(
+            context,
+            Image(
+              image: mImageProvider,
+              fit: widget.fit,
+            ),
+          )
+        : Image(
+            image: mImageProvider,
+            fit: widget.fit,
+          );
     if (widget.heroTag != null) {
       return Hero(
         tag: widget.heroTag,
         createRectTween: widget.heroRectTween,
-        child: Image(
-          image: imageProvider,
-          fit: widget.fit,
-        ),
+        child: contentWidget,
       );
     } else {
-      return Image(
-        image: imageProvider,
-        fit: widget.fit,
-      );
+      return contentWidget;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.heroTag != null && _heroCache[widget.heroTag] != null) {
-      return Hero(
-        tag: widget.heroTag,
-        createRectTween: widget.heroRectTween,
-        child: Image(
-          image: _heroCache[widget.heroTag],
-          fit: widget.fit,
-        ),
-      );
+      return renderImage(argImageProvider: _heroCache[widget.heroTag]);
     }
     if (noCache == null) {
       return Container();
